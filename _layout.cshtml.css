@@ -1,0 +1,144 @@
+/* Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
+for details on configuring this project to bundle and minify static web assets. */
+
+/* Layout-specific styles for Black & White Minimalist theme */
+
+/* Navbar brand styling */
+a.navbar-brand {
+  white-space: normal;
+  text-align: center;
+  word-break: break-all;
+  font-weight: 300;
+  color: #000000 !important;
+  font-size: 1.5rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Link colors */
+a {
+  color: #000000;
+  text-decoration: underline;
+  transition: opacity 0.2s ease-in-out;
+}
+
+a:hover {
+  opacity: 0.7;
+  text-decoration: underline;
+}
+
+/* Navigation links */
+.nav-link {
+  color: #000000 !important;
+  font-weight: 400;
+  transition: opacity 0.2s ease-in-out;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  opacity: 0.7 !important;
+  text-decoration: none;
+}
+
+/* Primary button override for layout */
+.btn-primary {
+  color: #fff;
+  background-color: #000000;
+  border-color: #000000;
+  font-weight: 500;
+  border: 2px solid;
+}
+
+.btn-primary:hover {
+  background-color: #333333;
+  border-color: #333333;
+}
+
+.btn-primary:focus, .btn-primary.focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.25);
+}
+
+/* Navigation pills */
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background-color: #000000;
+  border-color: #000000;
+}
+
+/* Border utilities */
+.border-top {
+  border-top: 2px solid #f0f0f0 !important;
+}
+
+.border-bottom {
+  border-bottom: 2px solid #f0f0f0 !important;
+}
+
+/* Navbar styling */
+.navbar {
+  background-color: #ffffff !important;
+  border-bottom: 2px solid #f0f0f0;
+  box-shadow: none;
+  padding: 1rem 0;
+}
+
+/* Box shadow utility */
+.box-shadow {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Accept policy button */
+button.accept-policy {
+  font-size: 1rem;
+  line-height: inherit;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500;
+}
+
+/* Footer styling */
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  white-space: nowrap;
+  line-height: 80px;
+  background-color: #ffffff;
+  border-top: 2px solid #f0f0f0;
+  color: #666666;
+  padding: 0 2rem;
+}
+
+.footer a {
+  color: #000000;
+  text-decoration: underline;
+}
+
+.footer a:hover {
+  opacity: 0.7;
+}
+
+/* Navbar toggle button */
+.navbar-toggler {
+  border: 2px solid #f0f0f0;
+}
+
+.navbar-toggler:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.25);
+}
+
+/* Environment badge in navbar */
+.navbar .environment-badge {
+  margin-left: 1rem;
+}
+
+/* Responsive navbar adjustments */
+@media (max-width: 576px) {
+  .navbar-brand {
+    font-size: 1.25rem;
+  }
+  
+  .navbar .environment-badge {
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+}
