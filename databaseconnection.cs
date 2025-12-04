@@ -37,10 +37,7 @@ public class DatabaseConnection
     // Mapping Vault DB Config Name → Actual SQL Server hostname
     private static readonly Dictionary<string, string> ServerMap = new()
     {
-        { "DCIR-DEVDB", "dcir-devdb.domain-msi.local" },
-        { "DCIR-STGDB", "dcir-stgdb.domain-msi.local" },
-        { "MSI-DEVERPDB", "msi-deverpdb.domain-msi.local" },
-        { "MSI-STGERPDB", "msi-stgerpdbl.domain-msi.local" }
+        {"server name"}
     };
 
     public string BuildConnectionString(string username, string password)
@@ -50,7 +47,7 @@ public class DatabaseConnection
 
         var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder
         {
-            DataSource = server, // no port → defaults to 1433
+            DataSource = server, 
             UserID = username,
             Password = password,
             TrustServerCertificate = TrustServerCertificate
