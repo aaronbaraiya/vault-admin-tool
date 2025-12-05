@@ -198,8 +198,12 @@ public class IndexModel : PageModel
     {
         try
         {
-            var vaultAddress = "vaultAddress";
-            var vaultToken = "vaultToken";
+            // these are examples the actual versions were omitted for saftely purposes 
+            var vaultAddress = _configuration["Vault:Address"]
+                ?? throw new InvalidOperationException("Vault address not configured");
+
+            var vaultToken = _configuration["Vault:Token"]
+                ?? throw new InvalidOperationException("Vault token not configured");
 
             // GROUP CREATION STATEMENTS
             var groupedCreation = new List<string>();
