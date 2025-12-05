@@ -4,7 +4,7 @@ namespace VaultRoleGenerator.Models;
 
 public class DatabaseConnection
 {
-    // Username and Password are now retrieved from configuration, not user input
+    // Username and Password are provided externally (not hard-coded)
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
 
@@ -28,16 +28,18 @@ public class DatabaseConnection
     [Display(Name = "Role Permission")]
     public string RolePermission { get; set; } = "rw";
 
-
-
     [Required(ErrorMessage = "Server Name is required")]
     [Display(Name = "Server Name")]
     public string VaultDbConfigName { get; set; } = string.Empty;
 
-    // Mapping Vault DB Config Name → Actual SQL Server hostname
+    // Mapping Vault DB Config Name → SQL Server hostname
+    // IMPORTANT: Replace internal hostnames with placeholders before publishing to GitHub
     private static readonly Dictionary<string, string> ServerMap = new()
     {
-        {"server name"}
+        // Example placeholders only the actual names were removed for safely purposes 
+        { "dev-sql", "dev-sql.example.com" },
+        { "stage-sql", "stage-sql.example.com" },
+        { "prod-sql", "prod-sql.example.com" }
     };
 
     public string BuildConnectionString(string username, string password)
@@ -47,13 +49,13 @@ public class DatabaseConnection
 
         var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder
         {
-            DataSource = server, 
+            DataSource = server,
             UserID = username,
             Password = password,
             TrustServerCertificate = TrustServerCertificate
         };
-        
-        // Explicitly set IntegratedSecurity to false AFTER construction to ensure SQL Authentication
+
+        // Explicitly disable Integrated Security – SQL Auth only
         builder.IntegratedSecurity = false;
 
         if (!string.IsNullOrEmpty(InitialDatabase))
