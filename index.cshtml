@@ -1,0 +1,418 @@
+@page
+@model IndexModel
+@using VaultRoleGenerator.Models
+@{
+    ViewData["Title"] = "Vault Admin Tools";
+}
+
+<div class="container-fluid">
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- STEP 1 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="bi bi-database me-2"></i> Step 1: Connect to SQL Server</h5>
+        </div>
+
+        <div class="card-body">
+            <form method="post" class="row g-3">
+
+                <!-- Server Name (hidden but functional) -->
+                <input type="hidden" asp-for="Connection.ServerName" />
+
+                <div class="col-md-6">
+                    <label asp-for="Connection.VaultDbConfigName"></label>
+                    <select asp-for="Connection.VaultDbConfigName" class="form-control" onchange="generateRoleName()">
+                        <option value="">-- Select Vault DB Config --</option>
+                        @foreach (var config in VaultDbConfigs.Available)
+                        {
+                            <option value="@config">@config</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Connection.VaultDbConfigName" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Connection.InitialDatabase"></label>
+                    <input asp-for="Connection.InitialDatabase" class="form-control" placeholder="master (optional)" />
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Connection.RoleName"></label>
+                    <input asp-for="Connection.RoleName" class="form-control" placeholder="stg_app_rw_dynamic" />
+                    <span asp-validation-for="Connection.RoleName"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Connection.AppName"></label>
+                    <input asp-for="Connection.AppName" class="form-control" placeholder="application" onchange="generateRoleName()" />
+                    <span asp-validation-for="Connection.AppName"></span>
+                </div>
+
+                <!-- Role Permission -->
+                <div class="col-md-6">
+                    <label>Role Permission</label>
+                    <select id="RolePermission" class="form-control" onchange="generateRoleName()">
+                        <option value="rw">Read-Write</option>
+                        <option value="ro">Read-Only</option>
+                    </select>
+                    <small class="text-muted">Used to generate the role name automatically.</small>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Connection.Password"></label>
+                    <input asp-for="Connection.Password" class="form-control" type="password" />
+                    <span asp-validation-for="Connection.Password"></span>
+                </div>
+
+                <div class="col-md-12 mt-2">
+                    <button type="submit" name="Action" value="test-connection" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-plug me-1"></i> Test Connection
+                    </button>
+
+                    <button type="submit" name="Action" value="load-databases" class="btn btn-primary">
+                        <i class="bi bi-list-ul me-1"></i> Load Databases
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+
+    <!-- STEP 2 -->
+    @if (Model.ShowDatabaseList)
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="bi bi-check2-square me-2"></i> Step 2: Select Databases and Permissions</h5>
+            </div>
+
+            <div class="card-body">
+
+                <form method="post">
+
+                    <!-- Hidden fields for round-trip -->
+                    <input type="hidden" asp-for="Connection.ServerName" />
+                    <input type="hidden" asp-for="Connection.Password" />
+                    <input type="hidden" asp-for="Connection.InitialDatabase" />
+                    <input type="hidden" asp-for="Connection.RoleName" />
+                    <input type="hidden" asp-for="Connection.AppName" />
+                    <input type="hidden" asp-for="Connection.VaultDbConfigName" />
+
+                    <div class="row mb-3">
+                        <div class="col-12 d-flex justify-content-between">
+                            <span class="text-muted">Found @Model.DatabaseSelections.Count databases</span>
+
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectAll()">
+                                    <i class="bi bi-check-all me-1"></i> Select All
+                                </button>
+
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="deselectAll()">
+                                    <i class="bi bi-x-circle me-1"></i> Deselect All
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        @for (int i = 0; i < Model.DatabaseSelections.Count; i++)
+                        {
+                            <div class="col-md-4 mb-3">
+                                <div class="card p-2 database-card" id="card-@i">
+
+                                    <input asp-for="DatabaseSelections[i].IsSelected"
+                                           class="form-check-input database-checkbox"
+                                           onchange="togglePermissionSelect(@i)" />
+
+                                    <label>@Model.DatabaseSelections[i].DatabaseName</label>
+                                    <input type="hidden" asp-for="DatabaseSelections[i].DatabaseName" />
+
+                                    <select asp-for="DatabaseSelections[i].Permission"
+                                            class="form-select mt-2"
+                                            id="permission-@i"
+                                            disabled>
+                                        @foreach (var p in Permissions.All)
+                                        {
+                                            <option value="@p">@p</option>
+                                        }
+                                    </select>
+
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <button type="submit" name="Action" value="generate-sql" class="btn btn-success btn-lg mt-3">
+                        <i class="bi bi-code-slash me-2"></i> Generate SQL Scripts
+                    </button>
+
+                </form>
+            </div>
+        </div>
+    }
+
+
+    <!-- STEP 3 -->
+    @if (Model.ShowSql)
+    {
+        <div class="card p-3">
+
+            <h5><i class="bi bi-file-code me-2"></i> Generated SQL Scripts</h5>
+
+            <form method="post">
+                <input type="hidden" asp-for="Connection.ServerName" />
+                <input type="hidden" asp-for="Connection.Password" />
+                <input type="hidden" asp-for="Connection.InitialDatabase" />
+                <input type="hidden" asp-for="Connection.RoleName" />
+                <input type="hidden" asp-for="Connection.AppName" />
+                <input type="hidden" asp-for="Connection.VaultDbConfigName" />
+
+                <input type="hidden" asp-for="CreationStatements" />
+                <input type="hidden" asp-for="RevocationStatements" />
+                <input type="hidden" asp-for="PolicyStatement" />
+                <input type="hidden" asp-for="TokenRoleStatement" />
+
+                <button type="submit" name="Action" value="build-vault" class="btn btn-success btn-lg">
+                    <i class="bi bi-box-arrow-up-right me-2"></i> Build Vault Configurations
+                </button>
+            </form>
+
+        </div>
+    }
+</div>
+
+
+
+@section Scripts {
+    <script>
+
+        // ---------------------------
+        //  Role Name Auto-Generation
+        // ---------------------------
+        function generateRoleName() {
+            const dbConfig = document.querySelector('[name="Connection.VaultDbConfigName"]').value;
+            const appName = document.querySelector('[name="Connection.AppName"]').value.trim().toLowerCase();
+            const perm = document.getElementById("RolePermission").value;
+
+            let env = "unknown";
+            const cfg = dbConfig.toLowerCase();
+            if (cfg.includes("dev")) env = "dev";
+            else if (cfg.includes("stg")) env = "stg";
+            else if (cfg.includes("erp")) env = "erp";
+            else if (cfg.includes("prod")) env = "prod";
+
+            if (appName) {
+                const role = `${env}_${appName}_${perm}_dynamic`;
+                document.querySelector('[name="Connection.RoleName"]').value = role;
+            }
+        }
+
+
+        // ---------------------------
+        //  Step 2: DB Permission UI
+        // ---------------------------
+        function togglePermissionSelect(index) {
+            const checkbox = document.querySelector(`input[name="DatabaseSelections[${index}].IsSelected"]`);
+            const select = document.getElementById(`permission-${index}`);
+            const card = document.getElementById(`card-${index}`);
+
+            if (checkbox && select && card) {
+                if (checkbox.checked) {
+                    select.disabled = false;
+                    select.value = 'ReadOnly';
+                    card.classList.add('selected');
+                } else {
+                    select.disabled = true;
+                    select.value = 'None';
+                    card.classList.remove('selected');
+                }
+            }
+        }
+
+        function selectAll() {
+            document.querySelectorAll('.database-checkbox').forEach((cb, index) => {
+                cb.checked = true;
+                togglePermissionSelect(index);
+            });
+        }
+
+        function deselectAll() {
+            document.querySelectorAll('.database-checkbox').forEach((cb, index) => {
+                cb.checked = false;
+                togglePermissionSelect(index);
+            });
+        }
+
+
+        // ---------------------------
+        //  Copy-to-Clipboard (All)
+        // ---------------------------
+        function copyToClipboard(type, event) {
+            let text = "";
+
+            const ids = {
+                "creation-sql": "creation-sql-text",
+                "revocation-sql": "revocation-sql-text",
+                "policy": "policy-text",
+                "token-role": "token-role-text"
+            };
+
+            const element = document.getElementById(ids[type]);
+            if (!element) return;
+            text = element.textContent;
+
+            const button = event.target;
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text)
+                    .then(() => showCopySuccess(button))
+                    .catch(() => fallbackCopyToClipboard(text, button));
+            } else {
+                fallbackCopyToClipboard(text, button);
+            }
+        }
+
+        function fallbackCopyToClipboard(text, button) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                const successful = document.execCommand("copy");
+                successful ? showCopySuccess(button) : showCopyError(button);
+            } catch {
+                showCopyError(button);
+            }
+
+            document.body.removeChild(textArea);
+        }
+
+        function showCopySuccess(button) {
+            const original = button.innerHTML;
+            button.innerHTML = '<i class="bi bi-check me-1"></i>Copied!';
+            button.classList.add('btn-success');
+            button.classList.remove('btn-outline-primary');
+
+            setTimeout(() => {
+                button.innerHTML = original;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-primary');
+            }, 2000);
+        }
+
+        function showCopyError(button) {
+            const original = button.innerHTML;
+            button.innerHTML = '<i class="bi bi-x me-1"></i>Failed!';
+            button.classList.add('btn-danger');
+            button.classList.remove('btn-outline-primary');
+
+            setTimeout(() => {
+                button.innerHTML = original;
+                button.classList.remove('btn-danger');
+                button.classList.add('btn-outline-primary');
+            }, 2000);
+        }
+
+
+        // ---------------------------
+        //  Copy-to-Clipboard (Single Line)
+        // ---------------------------
+        function copyLineToClipboard(elementId, button) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+
+            const text = element.textContent;
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text)
+                    .then(() => showLineCopySuccess(button))
+                    .catch(() => fallbackCopyLineToClipboard(text, button));
+            } else {
+                fallbackCopyLineToClipboard(text, button);
+            }
+        }
+
+        function fallbackCopyLineToClipboard(text, button) {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.left = "-999999px";
+            textarea.style.top = "-999999px";
+            document.body.appendChild(textarea);
+
+            textarea.focus();
+            textarea.select();
+
+            try {
+                const ok = document.execCommand("copy");
+                ok ? showLineCopySuccess(button) : showLineCopyError(button);
+            } catch {
+                showLineCopyError(button);
+            }
+
+            document.body.removeChild(textarea);
+        }
+
+        function showLineCopySuccess(button) {
+            const original = button.innerHTML;
+            button.innerHTML = '<i class="bi bi-check"></i>';
+            button.classList.add('btn-success');
+            button.classList.remove('btn-outline-secondary');
+
+            setTimeout(() => {
+                button.innerHTML = original;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-secondary');
+            }, 2000);
+        }
+
+        function showLineCopyError(button) {
+            const original = button.innerHTML;
+            button.innerHTML = '<i class="bi bi-x"></i>';
+            button.classList.add('btn-danger');
+            button.classList.remove('btn-outline-secondary');
+
+            setTimeout(() => {
+                button.innerHTML = original;
+                button.classList.remove('btn-danger');
+                button.classList.add('btn-outline-secondary');
+            }, 2000);
+        }
+
+
+        // ---------------------------
+        //  Initialize permission selects on load
+        // ---------------------------
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".database-checkbox").forEach((cb, i) => {
+                togglePermissionSelect(i);
+            });
+        });
+
+    </script>
+}
+
